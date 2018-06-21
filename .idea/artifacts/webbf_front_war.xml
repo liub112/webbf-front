@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="webbf-front:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="webbf.war">
+      <element id="artifact" artifact-name="webbf-front:war exploded" />
+    </root>
+  </artifact>
+</component>
