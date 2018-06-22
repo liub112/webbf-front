@@ -1,13 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
 	         http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <groupId>cn.edu.hdu</groupId>
-    <artifactId>webbf-parent</artifactId>
-    <version>1.0.0</version>
-  </parent>
   <modelVersion>4.0.0</modelVersion>
+  <groupId>com.al.crm</groupId>
   <artifactId>webbf-front</artifactId>
+  <version>1.0.0</version>
   <packaging>war</packaging>
   <name>webbf-front</name>
 
@@ -35,6 +32,48 @@
   </properties>
 
   <dependencies>
+    <!-- 集中缓存引入jar包 -->
+    <dependency>
+      <groupId>com.ai</groupId>
+      <artifactId>technology-cache</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.ctg.itrdc.cache</groupId>
+      <artifactId>ctg-cache-control</artifactId>
+      <version>2.3.0 </version>
+    </dependency>
+    <dependency>
+      <groupId>com.ctg.itrdc.cache</groupId>
+      <artifactId>ctg-cache-client</artifactId>
+      <version>2.3.0</version>
+    </dependency>
+    <dependency>
+      <groupId>redis.clients</groupId>
+      <artifactId>jedis</artifactId>
+      <version>2.7.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.ctg.itrdc.cache</groupId>
+      <artifactId>ctg-cache-common</artifactId>
+      <version>2.3.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.ctg.itrdc.cache</groupId>
+      <artifactId>ctg-cache-monitor</artifactId>
+      <version>2.3.0</version>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -56,7 +95,7 @@
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>${gson.version}</version>
+      <version>1.7.1_modify_0.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -91,41 +130,10 @@
       <version>${aspectjweaver.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.alibaba</groupId>
-      <artifactId>druid</artifactId>
-      <version>${druid.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>${mysql.connector.java.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.mybatis</groupId>
-      <artifactId>mybatis</artifactId>
-      <version>${mybatis.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.mybatis</groupId>
-      <artifactId>mybatis-spring</artifactId>
-      <version>${mybatis.spring.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>${httpclient.version}</version>
+      <version>4.3</version>
     </dependency>
-    <dependency>
-      <groupId>org.quartz-scheduler</groupId>
-      <artifactId>quartz</artifactId>
-      <version>${quartz.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.ehcache</groupId>
-      <artifactId>ehcache</artifactId>
-      <version>${ehcache.version}</version>
-    </dependency>
-
   </dependencies>
   <build>
     <finalName>webbf</finalName>
@@ -139,15 +147,15 @@
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.tomcat.maven</groupId>
-        <artifactId>tomcat7-maven-plugin</artifactId>
-        <version>2.1</version>
-        <configuration>
-          <contextReloadable>true</contextReloadable>
-          <uriEncoding>UTF-8</uriEncoding>
-        </configuration>
-      </plugin>
+      <!--<plugin>-->
+        <!--<groupId>org.apache.tomcat.maven</groupId>-->
+        <!--<artifactId>tomcat7-maven-plugin</artifactId>-->
+        <!--<version>2.1</version>-->
+        <!--<configuration>-->
+          <!--<contextReloadable>true</contextReloadable>-->
+          <!--<uriEncoding>UTF-8</uriEncoding>-->
+        <!--</configuration>-->
+      <!--</plugin>-->
     </plugins>
   </build>
 </project>

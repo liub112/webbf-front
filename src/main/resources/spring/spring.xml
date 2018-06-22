@@ -39,6 +39,34 @@
 	   <!--<property name="templateLoaderPath" value="classpath:emailtemplates" />-->
 	<!--</bean>-->
 
+    <bean class="org.springframework.context.SpringContextHolder"/>
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.ExtRequestMappingHandlerAdapter">
+        <property name="messageConverters">
+            <list>
+                <bean id="byteArrayHttpMessageConverter"
+                      class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/>
+                <bean id="stringHttpMessageConverter"
+                      class="org.springframework.http.converter.StringHttpMessageConverter">
+                    <property name="supportedMediaTypes">
+                        <list>
+                            <value>text/plain;charset=UTF-8</value>
+                        </list>
+                    </property>
+                </bean>
+                <bean id="resourceHttpMessageConverter"
+                      class="org.springframework.http.converter.ResourceHttpMessageConverter"/>
+                <bean id="sourceHttpMessageConverter"
+                      class="org.springframework.http.converter.xml.SourceHttpMessageConverter"/>
+                <bean id="jaxb2RootElementHttpMessageConverter"
+                      class="org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter"/>
+                <bean id="xmlAwareFormHttpMessageConverter"
+                      class="org.springframework.http.converter.xml.XmlAwareFormHttpMessageConverter"/>
+                <bean id="mappingJacksonHttpMessageConverter"
+                      class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>
+            </list>
+        </property>
+    </bean>
+
     <bean id="httpServiceExporter" class="org.springframework.httpservice.HttpServiceExporter">
         <property name="serviceUrl" value="/service/{serviceId}/{method}"/>
         <property name="handlerParameterResolvers">
