@@ -13,10 +13,11 @@
     <!-- 主要用于获取applicationContext
     <bean id="beanUtils" lazy-init="false" class="com.al.crm.util.BeanUtil" />
      -->
+    <import resource="../log-catcher.xml"/>
     <!-- 启用注解 -->
     <context:annotation-config />
 
-    <context:component-scan base-package="com.al.crm.services">
+    <context:component-scan base-package="com.al.crm">
         <!--
         <context:include-filter type="aspectj" expression="com.al.crm.custweb..*Controller"/>
         -->

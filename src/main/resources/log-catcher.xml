@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+     xsi:schemaLocation="
+     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+     http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	
+	<bean id="beanMethodInvokeLogAspect" class="com.al.crm.log.aop.BeanMethodInvokeLogAspect" init-method="holdThis">
+		<property name="logSender">
+			<ref local="defaultLogSender"/>
+		</property>
+		
+		<!-- 系统代码或系统名称 -->
+		<property name="sysCode">
+			<value>CRM-2013</value>
+		</property>
+		<!-- 方法调用日志开关，默认为开启，即为true
+		<property name="enableSvcLog">
+			<value>false</value>	
+		</property>
+		 -->
+	</bean>
+	
+	<aop:config>	
+		<aop:aspect id="svcLogAspect" ref="beanMethodInvokeLogAspect">	
+			<!-- 服务AOP日志使用示例  -->
+			<aop:pointcut id="sampleServiceForTest" expression="execution(* com.al.crm.log.aop.SampleService.test*(..))" />		
+			<aop:around pointcut-ref="sampleServiceForTest" method="invokeMethodWithLog" />
+			
+		</aop:aspect>
+	</aop:config>
+	
+	<!-- 用于测试的服务类，对 该类的testMethod方法调用结果进行缓存 -->
+	<bean id="sampleService" class="com.al.crm.log.aop.SampleService"/>
+	
+	
+	<!-- 用于收集 WAS的SystemOut日志，在正式使用时，需要修改sysCode属性  -->
+	<bean id="sysOutLogHandler" class="com.al.crm.log.tail.AppLogHandler">
+		<!-- 
+		<property name="passedRegx">
+			<value>.+\sSystemOut\s.+</value>	
+		</property>
+		 -->
+		<!-- 如果采集到的一行是以tab键字符开头的，则认为是错误信息，需采集 -->
+		<property name="passedRegx">
+			<value>\tat.+</value>	
+		</property>
+		<property name="logType">
+			<value>sysout</value>		
+		</property>		
+		<property name="logSender">
+			<ref local="defaultLogSender"/>
+		</property>
+	</bean>
+	<bean id="sysOutLogTailer" class="com.al.crm.log.tail.DefaultFileTailer">
+		<property name="handlers">
+			<list>
+				<ref local="sysOutLogHandler"/>
+			</list>
+		</property>
+		<property name="maxLineSize">
+			<value>100</value>
+		</property>
+		<property name="restart">
+			<value>true</value>
+		</property>
+		<property name="restartInterval">
+			<value>30</value>
+		</property>
+	</bean>	
+	<!-- 
+	<bean id="logSystemOut" class="com.al.crm.log.appserverlog.AppServerLogCatcher" 
+		init-method="start" destroy-method="stop">
+		<property name="logFile">			
+			<value>logs/${APP_SERVER_NAME}/SystemOut.log</value>			
+		</property>
+		<property name="fileTailer">
+			<ref local="sysOutLogTailer"/>
+		</property>
+	</bean>
+	 -->
+	
+	<!-- 用于收集 WAS的SystemErr日志，在正式使用时，需要修改sysCode属性  -->
+	<bean id="sysErrLogHandler" class="com.al.crm.log.tail.AppLogHandler">
+		<property name="passedRegx">
+			<value>.+\sSystemErr\s.+</value>	
+		</property>
+		<property name="logType">
+			<value>syserr</value>		
+		</property>		
+		<property name="logSender">
+			<ref local="defaultLogSender"/>
+		</property>
+	</bean>
+	<bean id="sysErrLogTailer" class="com.al.crm.log.tail.DefaultFileTailer">
+		<property name="handlers">
+			<list>
+				<ref local="sysErrLogHandler"/>
+			</list>
+		</property>
+		<property name="maxLineSize">
+			<value>100</value>
+		</property>
+		<property name="restart">
+			<value>true</value>
+		</property>
+		<property name="restartInterval">
+			<value>30</value>
+		</property>
+	</bean>	
+	<bean id="logSystemErr" class="com.al.crm.log.appserverlog.AppServerLogCatcher" 
+		init-method="start" destroy-method="stop">
+		<!-- -->
+		<property name="logFile">
+			<value>logs/SystemErr.log</value>
+		</property>
+		<property name="fileTailer">
+			<ref local="sysErrLogTailer"/>
+		</property>		
+	</bean>
+	
+	
+	<!-- 日志发送服务   -->
+	<bean id="defaultLogSender" class="com.al.crm.log.sender.impl.DefaultLogSender">
+	    <!-- 
+		<property name="logSendEnableds">
+			<value>${log.logSendEnableds}</value>
+		</property>
+		-->
+	</bean>
+	
+	<!-- 直接将日志保存到HBase，只用于测试    
+	<bean id="defaultLogSender" class="com.al.crm.log.sender.impl.LogSendToHBase"/>
+	-->
+	
+</beans>
