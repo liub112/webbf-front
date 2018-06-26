@@ -1,25 +1,28 @@
-package com.al.crm.services;
+package com.al.crm.intf.service;
 
-
+import com.al.common.exception.BaseException;
 import com.al.crm.utils.JsonUtil;
 import com.al.crm.utils.ReturnsUtil;
 import com.ctg.itrdc.cache.pool.CtgJedisPool;
 import com.ctg.itrdc.cache.pool.CtgJedisPoolConfig;
 import com.ctg.itrdc.cache.pool.ProxyJedis;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPoolConfig;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.Response;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class CtgCacheTestServiceImpl {
+@Service("ctgCacheService")
+public class CtgCacheServiceImpl {
 	//全量连接池表(需要线程安全)
-	private  List<CtgJedisPool> targetRedisSources;
+	private  List<CtgJedisPool> targetRedisSources = new CopyOnWriteArrayList<CtgJedisPool>();
 	//常用连接池表(需要线程安全)
 	private List<CtgJedisPool> resolvedRedisSources;
 	
@@ -29,15 +32,17 @@ public class CtgCacheTestServiceImpl {
 	
 	private Integer maxActive =300;
 	
-	private Integer maxIdle =30;
+	private Integer maxIdle =300;
 	 
 	private Integer database=4970;
 
-	private Integer minIdle=0;
+	private Integer minIdle=30;
 	
 	private Integer maxWaitMillis=3000;
 
-	private Integer	poolNum = 1;
+	private Long priod =3000L;
+
+	private ReentrantLock lock = new ReentrantLock();
 
 	private Boolean broken =false;
 	
@@ -50,28 +55,26 @@ public class CtgCacheTestServiceImpl {
 	"maxWaitMillis":3000,
 	"minIdle":3,
 	"passWord":"crmtest#asia@123",
-	"poolNum":1,	
+	 "period":3000,
 	"servers":"10.128.91.222:8088,10.128.91.223:8088"
 	}
 	 */
-	public String initTargetRedisSources(String jsonString){
+	public String initRedisClientParam(String jsonString){
 		try {
 			JSONObject json = JSONObject.fromObject(jsonString);
 			String errorMsg ="初始化连接池获取参数时";
-			String servers =JsonUtil.getStringFromJSON(json, "servers", errorMsg);		
+			String servers =JsonUtil.getStringFromJSON(json, "servers", errorMsg);
 			String passWord =JsonUtil.getStringFromJSON(json, "passWord", errorMsg);
 			Integer maxActive = JsonUtil.getIntByKey(json, "maxActive");
 			Integer maxIdle = JsonUtil.getIntByKey(json, "maxIdle");
 			Integer database = JsonUtil.getIntByKey(json, "database");
 			Integer minIdle = JsonUtil.getIntByKey(json, "minIdle");
 			Integer maxWaitMillis = JsonUtil.getIntByKey(json, "maxWaitMillis");
-			Integer poolNum = JsonUtil.getNotNullIntFromJSON(json, "poolNum", errorMsg);		
-			this.initParams(servers,passWord,maxActive,maxIdle,database,minIdle,maxWaitMillis,poolNum);
-			this.initCtgJedisPool();	
+			Integer period = JsonUtil.getIntByKey(json,"period");
+			this.initParams(servers,passWord,maxActive,maxIdle,database,minIdle,maxWaitMillis,period);
 		} catch (Exception e) {
 			return ReturnsUtil.returnException("初始化接入机连接池获取参数时", e).toString();
 		}
-	
 		return queryCtgCacheInitParams();
 		
 	}
@@ -80,7 +83,7 @@ public class CtgCacheTestServiceImpl {
 	 * 设置参数
 	 * @return 
 	 */
-	private synchronized void initParams(String servers,String passWord,Integer maxActive,Integer maxIdle,Integer database,Integer minIdle,Integer maxWaitMillis,Integer poolNum){
+	private synchronized void initParams(String servers,String passWord,Integer maxActive,Integer maxIdle,Integer database,Integer minIdle,Integer maxWaitMillis,Integer period){
 		destory();
 		//1.设置初始化参数
 		if(StringUtils.isNotBlank(servers))this.servers=servers;
@@ -90,43 +93,65 @@ public class CtgCacheTestServiceImpl {
 		if(database!=null)this.database=database;
 		if(minIdle!=null)this.minIdle=minIdle;
 		if(maxWaitMillis!=null)this.maxWaitMillis=maxWaitMillis;
-		if(poolNum!=null)this.poolNum=poolNum;
-		targetRedisSources = new ArrayList<CtgJedisPool>(poolNum);
-		//2.根据参数初始化线程池
-
-
-
+		if(period!=null)this.priod= Long.valueOf(period);
 	}
-	
+
+	public String initTargetRedisSources(String jsonStr){
+		try {
+			if(!lock.tryLock()){
+				return ReturnsUtil.returnException("获取锁异常：",new BaseException("存在前置操作，请销毁或者等待!")).toString();
+			}
+			JSONObject json = JSONObject.fromObject(jsonStr);
+			Integer poolNum = JsonUtil.getNotNullIntFromJSON(json,"poolNum","从入参中获取poolNum");
+			destory();
+			this.broken = false;
+			for (int i = 0; i < poolNum; i++) {
+				if(this.broken){
+					throw new BaseException("当前初始化任务已经被中断...");
+				}
+				initRedisClient();
+			}
+		}catch (Exception e){
+			return ReturnsUtil.returnException("初始化连接池失败：", e).toString();
+		}finally {
+			try {
+				lock.unlock();
+			}catch (Exception e){
+
+			}
+		}
+		return ReturnsUtil.returnSuccess("{\"curPoolNum\":\""+targetRedisSources.size()+"\"}").toString();
+	}
 	/**
 	 * 初始化接入机连接池
 	 */
-	private synchronized void initCtgJedisPool(){
-		for (int j = 0; j < poolNum.intValue(); j++) {
-			if(this.broken) break;
-	        List<HostAndPort> hostAndPortList = new ArrayList();
-	        String[] server= servers.split(",");
-	        if (null!=server){
-	            for (int i = 0; i < server.length; i++) {
-	                String[] ip = server[i].split(":");
-	                HostAndPort host = new HostAndPort(ip[0], Integer.parseInt(ip[1]));
-	                hostAndPortList.add(host);
-	            }
-	        }
-	        GenericObjectPoolConfig poolConfig = new JedisPoolConfig();
-	        poolConfig.setMaxIdle(maxIdle); //最大空闲连接数 30
-	        poolConfig.setMaxTotal(maxActive); // 最大连接数（空闲+使用中） 200
-	        poolConfig.setMinIdle(minIdle); //保持的最小空闲连接数 3
-	        poolConfig.setMaxWaitMillis(maxWaitMillis); //3000
+	public  String initRedisClient(){
+		try {
+			List<HostAndPort> hostAndPortList = new ArrayList();
+			String[] server= servers.split(",");
+			if (null!=server){
+				for (int i = 0; i < server.length; i++) {
+					String[] ip = server[i].split(":");
+					HostAndPort host = new HostAndPort(ip[0], Integer.parseInt(ip[1]));
+					hostAndPortList.add(host);
+				}
+			}
+			GenericObjectPoolConfig poolConfig = new JedisPoolConfig();
+			poolConfig.setMaxIdle(maxIdle); //最大空闲连接数 30
+			poolConfig.setMaxTotal(maxActive); // 最大连接数（空闲+使用中） 200
+			poolConfig.setMinIdle(minIdle); //保持的最小空闲连接数 3
+			poolConfig.setMaxWaitMillis(maxWaitMillis); //3000
 
-	        CtgJedisPoolConfig config = new CtgJedisPoolConfig(hostAndPortList);
+			CtgJedisPoolConfig config = new CtgJedisPoolConfig(hostAndPortList);
 
-	        config.setDatabase(4970).setPassword(passWord).setPoolConfig(poolConfig)
-	                .setPeriod(1000).setMonitorTimeout(100);
-	        CtgJedisPool ctgJedisPool = new CtgJedisPool(config);	
-	        if(targetRedisSources == null) targetRedisSources =new ArrayList<CtgJedisPool>();
-	        targetRedisSources.add(ctgJedisPool);
+			config.setDatabase(4970).setPassword(passWord).setPoolConfig(poolConfig)
+					.setPeriod(this.priod).setMonitorTimeout(100);
+			CtgJedisPool ctgJedisPool = new CtgJedisPool(config);
+			targetRedisSources.add(ctgJedisPool);
+		}catch (Exception e){
+			return  ReturnsUtil.returnException("初始化连接池失败：", e).toString();
 		}
+		return ReturnsUtil.returnSuccess("{\"curPoolNum\":\""+targetRedisSources.size()+"\"}").toString();
 	}
 	/**
 	 * 初始化常用连接池
@@ -173,11 +198,7 @@ public class CtgCacheTestServiceImpl {
 				if("P".equals(items[i])){
 					String obj = JsonUtil.getNotNullStringFromJSON(keyJson,"obj","从入参中获取obj时");
 					jedis= jedisPool.getResource();
-					Pipeline p = jedis.pipelined();
-					p.set(key,obj);
-					Response<String> res = p.get(key);
-					p.sync();
-//					jedis.set(key, obj);
+					jedis.set(key, obj);
 					jedis.close();
 				}
 				if("CL".equals(items[i])){
@@ -206,6 +227,7 @@ public class CtgCacheTestServiceImpl {
 	public String destory(){
 		try{
 			this.broken = true;
+			Thread.sleep(1000);
 			if(targetRedisSources !=null&&targetRedisSources.size()>0){
 				if(resolvedRedisSources!=null&&resolvedRedisSources.size()>0)resolvedRedisSources.clear();
 				for (int i = 0; i < targetRedisSources.size(); i++) {
@@ -216,8 +238,6 @@ public class CtgCacheTestServiceImpl {
 			}	
 		}catch(Exception e){
 			return ReturnsUtil.returnException("销毁接入机连接池", e).toString();
-		}finally {
-			broken = false;
 		}
 		return ReturnsUtil.returnSuccess(null).toString();
 	}
@@ -237,8 +257,24 @@ public class CtgCacheTestServiceImpl {
 		json.put("database", database);
 		json.put("minIdle", minIdle);
 		json.put("maxWaitMillis", maxWaitMillis);
-		json.put("poolNum", poolNum);
+		json.put("period", this.priod);
 		json.put("broken",broken);
+
+		JSONArray targetRedisSourcesArray = new JSONArray();
+		if(targetRedisSources!=null){
+			for (int i=0;i<targetRedisSources.size();i++){
+				CtgJedisPool poool = (CtgJedisPool) targetRedisSources.get(i);
+				JSONObject poolParam = new JSONObject();
+				//活动连接数
+				poolParam.put("numActive",poool.getNumActive());
+				//空闲连接数
+				poolParam.put("numIdle",poool.getNumIdle());
+				poolParam.put("numWaiters",poool.getNumWaiters());
+				targetRedisSourcesArray.add(poolParam);
+			}
+			json.put("targetRedisSourcesArray",targetRedisSourcesArray);
+		}
+
 		return json.toString();
 	}
 	
@@ -261,7 +297,7 @@ public class CtgCacheTestServiceImpl {
                 int random = (int) (Math.random() * list.size());  
                 if (!map.containsKey(random)) {  
                     map.put(random, "");  
-                    System.out.println(random+"==========="+list.get(random));  
+//                    System.out.println(random+"==========="+list.get(random));
                     listNew.add(list.get(random));  
                 }  
             }  
@@ -279,5 +315,6 @@ public class CtgCacheTestServiceImpl {
 //			 System.out.println(rand.nextInt(20)+1);
 		}
 	}
-
 }
+
+
