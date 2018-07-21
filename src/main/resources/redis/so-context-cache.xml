@@ -14,7 +14,7 @@
         <!--<property name="database" value="${cache.redis.database}" />-->
 
     <!--</bean>-->
-    <!---->
+
        <!--<bean id="redisPool_2" class="com.al.crm.cache.pool.RedisPool"  init-method="init" lazy-init="true">-->
         <!--<property  name="maxTotal" value="${cache.redis.maxActive}" />-->
         <!--<property  name="maxIdle" value="${cache.redis.maxIdle}" />-->
@@ -48,19 +48,32 @@
         </constructor-arg>
     </bean>
 
-    <bean id="provRedisCluster" class="com.al.crm.redis.cluster.DefaultIRedisFixProxy">
-        <property name="discover" ref="clientDiscover" />
+    <!--<bean id="cl03" class="com.al.crm.redis.cluster.CtgJedisCache">-->
+        <!--<constructor-arg>-->
+            <!--<props>-->
+                <!--<prop key="redis.url">${cache.redis.url}</prop>-->
+                <!--<prop key="pwd">${cache.redis.passWord}</prop>-->
+                <!--<prop key="redis.maxActive">${cache.redis.maxActive}</prop>-->
+                <!--<prop key="redis.maxIdle">${cache.redis.maxIdle}</prop>-->
+                <!--<prop key="redis.minIdle">${cache.redis.minIdle}</prop>-->
+            <!--</props>-->
+        <!--</constructor-arg>-->
+    <!--</bean>-->
+
+    <bean id="provRedisCluster" class="com.al.crm.redis.proxy.DefaultRedisFixProxy">
+        <constructor-arg name="clientRouteSelector" ref="routeSelector"/>
     </bean>
     
     	 <!--集团分省redis路由配置   -->
-	 <bean id="clientDiscover" class="com.al.crm.redis.route.DefaultClientInstanceDiscover">
+	 <bean id="routeSelector" class="com.al.crm.redis.selector.NosqlClientRouteSelector">
 		<property name="targetClientInstanceBeans">
 			<map>
-			<entry key="rds01" value-ref="cl01" />
-			<entry key="rds02" value-ref="cl02" />
+			    <entry key="rds01" value-ref="cl01" />
+			    <entry key="rds02" value-ref="cl02" />
+                <!--<entry key="rds03" value-ref="cl03" />-->
 			</map>
 		</property>
-		<property name="strategy" value="com.al.crm.redis.route.DefaultRouteStrategy"/>
+		<property name="strategy" value="com.al.crm.redis.strategy.DefaultRouteStrategy"/>
 	</bean>
 
 </beans>

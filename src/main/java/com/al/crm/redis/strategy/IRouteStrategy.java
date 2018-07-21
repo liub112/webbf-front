@@ -1,4 +1,4 @@
-package com.al.crm.redis.route;
+package com.al.crm.redis.strategy;
 
 /**
  * 路由策略

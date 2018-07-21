@@ -122,7 +122,7 @@ public class ReturnsUtil {
 //			e.printStackTrace(new PrintStream(out));
 //			try {
 //				byte[] lens = out.toByteArray();
-//				jsonObj.put("errorStack", new String(lens,MDA.ERROR_INFO_ENCODE));
+//				jsonObj.put("errorStack", new String(lens,Constant.ERROR_INFO_ENCODE));
 //			} catch (UnsupportedEncodingException e1) {
 //			}
 			jsonObj.put("errorStack", getStackTrackMessage(e));

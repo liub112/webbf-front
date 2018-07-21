@@ -1,4 +1,4 @@
-package com.al.crm.redis.route;
+package com.al.crm.redis;
 
 public class RouteContext {
 	private static final ThreadLocal<String> contextHolder=new ThreadLocal<String>();	
