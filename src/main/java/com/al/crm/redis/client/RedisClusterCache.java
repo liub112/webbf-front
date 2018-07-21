@@ -1,4 +1,4 @@
-package com.al.crm.redis.cluster;
+package com.al.crm.redis.client;
 
 import com.al.crm.nosql.cache.CacheException;
 import com.al.crm.nosql.cache.ICache;
@@ -50,7 +50,7 @@ public class RedisClusterCache implements IRedisFix {
     @Override
     public String toString() {
         return "RedisClusterCache{" +
-                "cluster=" + cluster +
+                "client=" + cluster +
                 ", serializerType='" + serializerType + '\'' +
                 ", redisUrls='" + redisUrls + '\'' +
                 '}';
@@ -76,7 +76,7 @@ public class RedisClusterCache implements IRedisFix {
         int maxAttempts = 5;
         GenericObjectPoolConfig poolConfig = getPoolConfig(props);
         Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
-        //Jedis Cluster will attempt to discover cluster nodes automatically
+        //Jedis Cluster will attempt to discover client nodes automatically
         String[] urls = StringUtils.split(redisUrls, ",");
         for (int i = 0; i < urls.length; i++) {
             jedisClusterNodes.add(resolver(urls[i], this));
@@ -214,7 +214,7 @@ public class RedisClusterCache implements IRedisFix {
 
     public Object get(String key) {
         return get(null, key);
-        //return cluster.get(key);
+        //return client.get(key);
     }
 
     public byte[] get(byte[] key) {

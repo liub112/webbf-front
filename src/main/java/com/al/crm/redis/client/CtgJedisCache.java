@@ -1,4 +1,4 @@
-package com.al.crm.redis.cluster;
+package com.al.crm.redis.client;
 
 import com.al.crm.nosql.cache.*;
 import com.al.crm.nosql.cache.impl.AbstractCache;

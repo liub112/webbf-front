@@ -26,7 +26,7 @@
 
     <!--</bean>-->
 
-    <bean id="cl01" class="com.al.crm.redis.cluster.RedisClusterCache">
+    <bean id="cl01" class="com.al.crm.redis.client.RedisClusterCache">
         <constructor-arg>
             <props>
                 <prop key="redis.url">${cacheCluster_1.redis.url}</prop>
@@ -48,7 +48,7 @@
         </constructor-arg>
     </bean>
 
-    <!--<bean id="cl03" class="com.al.crm.redis.cluster.CtgJedisCache">-->
+    <!--<bean id="cl03" class="com.al.crm.redis.client.CtgJedisCache">-->
         <!--<constructor-arg>-->
             <!--<props>-->
                 <!--<prop key="redis.url">${cache.redis.url}</prop>-->
