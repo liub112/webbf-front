@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+   <!--<bean id="redisPool_1" class="com.al.crm.cache.pool.RedisPool"  init-method="init" lazy-init="true">-->
+        <!--<property  name="maxTotal" value="${cache.redis.maxActive}" />-->
+        <!--<property  name="maxIdle" value="${cache.redis.maxIdle}" />-->
+        <!--<property  name="maxWaitMillis" value="${cache.redis.maxWaitMillis}" />-->
+        <!--<property name="minIdle" value="${cache.redis.minIdle}"/>-->
+        <!--<property name="serverIp" value="${cache.redis.servers}" />-->
+        <!--<property name="passWord" value="${cache.redis.passWord}" />-->
+        <!--<property name="database" value="${cache.redis.database}" />-->
+
+    <!--</bean>-->
+    <!---->
+       <!--<bean id="redisPool_2" class="com.al.crm.cache.pool.RedisPool"  init-method="init" lazy-init="true">-->
+        <!--<property  name="maxTotal" value="${cache.redis.maxActive}" />-->
+        <!--<property  name="maxIdle" value="${cache.redis.maxIdle}" />-->
+        <!--<property  name="maxWaitMillis" value="${cache.redis.maxWaitMillis}" />-->
+        <!--<property name="minIdle" value="${cache.redis.minIdle}"/>-->
+        <!--<property name="serverIp" value="${cache.redis.servers}" />-->
+        <!--<property name="passWord" value="${cache.redis.passWord}" />-->
+        <!--<property name="database" value="${cache.redis.database}" />-->
+
+    <!--</bean>-->
+
+    <bean id="cl01" class="com.al.crm.redis.cluster.RedisClusterCache">
+        <constructor-arg>
+            <props>
+                <prop key="redis.url">${cacheCluster_1.redis.url}</prop>
+                <prop key="redis.maxActive">${cacheCluster_1.redis.maxActive}</prop>
+                <prop key="redis.maxIdle">${cacheCluster_1.redis.maxIdle}</prop>
+                <prop key="redis.minIdle">${cacheCluster_1.redis.minIdle}</prop>
+            </props>
+        </constructor-arg>
+    </bean>
+
+    <bean id="cl02" class="com.al.crm.nosql.cache.impl.RedisCache">
+        <constructor-arg>
+            <props>
+                <prop key="redis.url">${localCache.redis.url}</prop>
+                <prop key="redis.maxActive">${localCache.redis.maxActive}</prop>
+                <prop key="redis.maxIdle">${localCache.redis.maxIdle}</prop>
+                <prop key="redis.minIdle">${localCache.redis.minIdle}</prop>
+            </props>
+        </constructor-arg>
+    </bean>
+
+    <bean id="provRedisCluster" class="com.al.crm.redis.cluster.DefaultIRedisFixProxy">
+        <property name="discover" ref="clientDiscover" />
+    </bean>
+    
+    	 <!--集团分省redis路由配置   -->
+	 <bean id="clientDiscover" class="com.al.crm.redis.route.DefaultClientInstanceDiscover">
+		<property name="targetClientInstanceBeans">
+			<map>
+			<entry key="rds01" value-ref="cl01" />
+			<entry key="rds02" value-ref="cl02" />
+			</map>
+		</property>
+		<property name="strategy" value="com.al.crm.redis.route.DefaultRouteStrategy"/>
+	</bean>
+
+</beans>

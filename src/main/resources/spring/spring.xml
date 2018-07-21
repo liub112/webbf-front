@@ -13,6 +13,7 @@
     <!-- 主要用于获取applicationContext
     <bean id="beanUtils" lazy-init="false" class="com.al.crm.util.BeanUtil" />
      -->
+
     <import resource="../log-catcher.xml"/>
     <!-- 启用注解 -->
     <context:annotation-config />
@@ -26,7 +27,7 @@
     <context:property-placeholder location="classpath:config.properties" />
 
 
-
+    <import resource="../redis/so-context-cache.xml"/>
 
     <!-- CAS配置相关 -->
     <!--<import resource="cas.xml" />-->

@@ -176,7 +176,7 @@ public class ClusterServiceImpl {
 		if(testOnReturn!=null)this.testOnReturn=testOnReturn;
 		if(timeBetweenEvictionRunsMillis!=null)this.timeBetweenEvictionRunsMillis=timeBetweenEvictionRunsMillis;
 		if(minEvictableIdleTimeMillis!=null)this.minEvictableIdleTimeMillis=minEvictableIdleTimeMillis;
-		getPoolConfig();
+//		getPoolConfig();
 	}
 
 	public String initTargetRedisSources(String jsonStr){
